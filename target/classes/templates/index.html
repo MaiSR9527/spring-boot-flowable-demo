@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>index</title>
+	<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+	<!-- 引入样式 -->
+	<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+	<!-- 引入组件库 -->
+	<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+	
+	<script src="${base}/js/axios.min.js"></script>
+</head>    
+
+
+<div id="vfor2">	
+    
+  <el-container>
+    <el-header style="text-align: left; font-size: 12px; margin-top: 10px;">
+          <el-link type="success">你好: ${username}</el-link>
+          <el-button type="primary" size="mini" @click="loginOut" icon="el-icon-add">退出登录</el-button>
+    </el-header>
+    
+    <el-row style="text-align: left; font-size: 10px; margin-left: 6px">
+      <el-button type="primary" size="mini" @click="loadTableData" icon="el-icon-add">刷新</el-button>
+      <el-button type="primary" size="mini" @click="applyTask" icon="el-icon-add">申请新任务</el-button>
+      <el-button v-show ='username == "el" ' type="primary" size="mini" @click="createLeave" icon="el-icon-add">请假二级审批</el-button>
+            <el-button v-show ='username == "el" ' type="primary" size="mini" @click="createLeaveCandidate" icon="el-icon-add">请假候选人审批</el-button>
+    </el-row>
+<template>
+    <el-table
+      :data="tableData"
+      ref="multipleTable"
+      tooltip-effect="dark"
+      style="width: 100%"
+      @selection-change="handleSelectionChange">
+    <el-table-column
+      type="selection"
+      width="55">
+      
+    </el-table-column>
+      <el-table-column
+        prop="taskId"
+        label="taskId"
+        width="280">
+      </el-table-column>
+      <el-table-column
+        prop="name"
+        label="名称"
+        width="180">
+      </el-table-column>
+      <el-table-column
+        prop="processInstanceId"
+        label="流程实例ID"
+        width="180">
+      </el-table-column>
+      <el-table-column
+        prop="executionId"
+        label="执行流ID"
+        width="180">
+      </el-table-column>
+      <el-table-column
+        prop="processDefinitionId"
+        label="流程定义Id"
+        width="180">
+      </el-table-column>
+       
+      <el-table-column
+        label="操作"
+        width="300">
+	      <template slot-scope="scope">
+	        <el-button
+	          size="mini"
+	          @click="handleTask(scope.$index, scope.row)">办理</el-button>
+	        <el-button
+	          size="mini"
+	          type="danger"
+	          @click="flowchart(scope.$index, scope.row)">流程图</el-button>
+	        <el-button
+	          size="mini"
+	          type="danger"
+	          @click="getHistory(scope.$index, scope.row)">流程记录</el-button>  
+	      </template>
+      </el-table-column>
+    
+    </el-table>
+    </template>  
+    
+    <el-dialog title="请假" :visible.sync="dialogFormVisible">
+	  <el-form :model="form">
+	  
+	  	<el-form-item label="taskId" :label-width="formLabelWidth">
+	      <el-input v-model="form.taskId" autocomplete="off"></el-input>
+	    </el-form-item>
+	    
+	    <el-form-item v-show ='username == "el" ' label="用户名称" :label-width="formLabelWidth">
+	      <el-input v-model="form.name" autocomplete="off"></el-input>
+	    </el-form-item>
+	    <el-form-item v-show ='username == "el" ' label="消息内容" :label-width="formLabelWidth">
+	      <el-input v-model="form.message" autocomplete="off"></el-input>
+	    </el-form-item>
+	    <el-form-item v-show ='username == "el" ' label="提交方式" :label-width="formLabelWidth">
+	      <el-select v-model="form.submitType" placeholder="提交方式">
+	        <el-option label="提交" value="Y"></el-option>
+	        <el-option label="取消" value="N"></el-option>
+	      </el-select>
+	    </el-form-item>
+	    
+	    <el-divider></el-divider>
+	    
+	    <el-form-item v-show ='username == "tl" ' label="主管审批结果" :label-width="formLabelWidth">
+	        <el-radio v-model="form.tlApprove" label="Y">同意</el-radio>
+            <el-radio v-model="form.tlApprove" label="N">不同意</el-radio>
+	    </el-form-item>
+	    <el-form-item v-show ='username == "tl" ' label="主管审批备注" :label-width="formLabelWidth">
+	      <el-input v-model="form.tlMsg" autocomplete="off"></el-input>
+	    </el-form-item>
+
+	    <el-divider></el-divider>
+	    
+	   <el-form-item v-show ='username == "hr" ' label="hr审批结果" :label-width="formLabelWidth">
+	        <el-radio v-model="form.hrApprove" label="Y">同意</el-radio>
+            <el-radio v-model="form.hrApprove" label="N">不同意</el-radio>
+	    </el-form-item>
+	    <el-form-item v-show ='username == "hr" ' label="hr审批备注" :label-width="formLabelWidth">
+	      <el-input v-model="form.hrMsg" autocomplete="off"></el-input>
+	    </el-form-item>
+
+	    	    
+	  </el-form>
+	  <div slot="footer" class="dialog-footer">
+	    <el-button @click="dialogFormVisible = false">取 消</el-button>
+	    <el-button type="primary" @click="submitForm">确 定</el-button>
+	  </div>
+	</el-dialog>
+    
+    
+   
+   <el-dialog title="请假2" :visible.sync="dialogFormVisible2">
+	  <el-form :model="form">
+	  
+	  	<el-form-item label="taskId" :label-width="formLabelWidth">
+	      <el-input v-model="form.taskId" autocomplete="off"></el-input>
+	    </el-form-item>
+	    
+	    <el-form-item v-show ='username == "el" ' label="请假原因" :label-width="formLabelWidth">
+	      <el-input v-model="form.reason" autocomplete="off"></el-input>
+	    </el-form-item>
+	    <el-form-item v-show ='username == "el" ' label="请假天数" :label-width="formLabelWidth">
+	      <el-input v-model="form.count" autocomplete="off"></el-input>
+	    </el-form-item>
+	    
+	    <el-divider></el-divider>
+	     
+	    <el-form-item v-show ='username == "tl1" ' label="主管审批结果" :label-width="formLabelWidth">
+	        <el-radio v-model="form.tlApprove" label="Y">同意</el-radio>
+            <el-radio v-model="form.tlApprove" label="N">不同意</el-radio>
+	    </el-form-item>
+	    <el-form-item v-show ='username == "tl1" ' label="主管审批备注" :label-width="formLabelWidth">
+	      <el-input v-model="form.tlMsg" autocomplete="off"></el-input>
+	    </el-form-item>
+	    
+      </el-form>
+	  <div slot="footer" class="dialog-footer">
+	    <el-button @click="dialogFormVisible2 = false">取 消</el-button>
+	    <el-button type="primary" @click="submitForm2">确 定</el-button>
+	  </div>
+	</el-dialog> 
+
+  </el-container>
+
+</div>
+
+  
+  <script type="text/javascript">
+	var app = new Vue({
+		  el: '#vfor2',
+		  data: {
+			  tableData: [
+				  {
+					  executionId: "2502",
+					  name: "填写审批信息",
+					  processInstanceId: "2501",
+					  taskId: "2505"
+					}
+			  ],
+		      formInline: {
+		    	  createTime: '',
+		          name: ''
+		        },
+	          searchVisitTime: [],
+	          dialogFormVisible: false,
+	          dialogFormVisible2: false,
+	          form: {
+	        	  taskId: '',
+	              name: '',
+	              message: '',
+	              submitType: '',
+	              tlMsg:'',
+	              tlApprove:'',
+	              hrMsg:'',
+	              hrApprove:'',
+	              reason:'',
+	              count:''
+	            },
+	            task: {
+		              name: '',
+		            },
+	            formLabelWidth: '120px',
+	            username: '${username}'
+		  },
+		  methods: {
+			    createLeave () {
+			        this.dialogFormVisible = true
+			        const formParams = new FormData()
+			    	this.noAyncHttp('${base}/approve/create.json', formParams).then((res) => {
+			            this.form.taskId = res.data
+			          }, (error) => {
+			            console.error('出错了', error)
+			          })
+		        },
+		        createLeaveCandidate () {
+			        this.dialogFormVisible2 = true
+			        const formParams = new FormData()
+			    	this.noAyncHttp('${base}/leave/create.json', formParams).then((res) => {
+			            this.form.taskId = res.data
+			          }, (error) => {
+			            console.error('出错了', error)
+			          })
+		        },
+			    handleSelectionChange() {
+			    	
+			    },
+			    loginOut() {
+			    	 window.location.href='${base}/login/out';
+			    },
+                handleTask(index, row) {
+			    	 if( row.processDefinitionId=='leaveProcess:3:a924f790-f3ab-11e9-a2f0-d46d6dc106c4' ){
+			    		 this.dialogFormVisible2 = true
+				    	 this.form.taskId = row.taskId
+			    	 }else{
+				    	 this.dialogFormVisible = true
+				    	 this.form.taskId = row.taskId
+			    	 }
+			    },
+			    flowchart(index, row) {
+			    	 this.form.taskId = row.taskId
+			    	 window.open("${base}/approve/chart?taskId="+row.taskId);
+			    },
+			    getHistory(index, row) {
+			    	 this.form.taskId = row.taskId
+			    	 window.open("${base}/approve/history?processId="+row.processInstanceId);
+			    },
+			    submitForm() {
+			    	const formParams = new FormData()
+			          if (this.form.taskId) {
+			            formParams.append('taskId', this.form.taskId)
+			          }
+			    	if (this.form.name) {
+			            formParams.append('name', this.form.name)
+			          }
+			    	if (this.form.message) {
+			            formParams.append('message', this.form.message)
+			          }
+			    	if (this.form.submitType) {
+			            formParams.append('submitType', this.form.submitType)
+			          }
+			    	///////////////////////////////////////////
+			    	if (this.form.tlMsg) {
+			            formParams.append('tlMsg', this.form.tlMsg)
+			          }
+			    	if (this.form.tlApprove) {
+			            formParams.append('tlApprove', this.form.tlApprove)
+			          }
+			    	////////////////////////////////
+			    	if (this.form.hrMsg) {
+			            formParams.append('hrMsg', this.form.hrMsg)
+			          }
+			    	if (this.form.hrApprove) {
+			            formParams.append('hrApprove', this.form.hrApprove)
+			          }
+			        this.noAyncHttp('${base}/approve/handle/task.json', formParams).then((res) => {
+			        	   this.loadTableData();
+				          }, (error) => {
+				            console.error('出错了', error)
+				          })
+			    	 this.dialogFormVisible = false
+			    },
+			    submitForm2() {
+			    	const formParams2 = new FormData()
+			          if (this.form.taskId) {
+			            formParams2.append('taskId', this.form.taskId)
+			          }
+			    	if (this.form.reason) {
+			            formParams2.append('reason', this.form.reason)
+			          }
+			    	if (this.form.count) {
+			            formParams2.append('count', this.form.count)
+			          }
+			    	///////////////////////////////////////////
+			    	if (this.form.tlMsg) {
+			            formParams.append('tlMsg', this.form.tlMsg)
+			          }
+			    	if (this.form.tlApprove) {
+			            formParams.append('tlApprove', this.form.tlApprove)
+			          }
+			        this.noAyncHttp('${base}/leave/handle/task.json', formParams2).then((res) => {
+			        	   this.loadTableData();
+				          }, (error) => {
+				            console.error('出错了', error)
+				          })
+			    	 this.dialogFormVisible2 = false
+			    },
+		        loadTableData: function () {
+		          const formParams = new FormData()
+		          if (this.formInline.name) {
+		            formParams.append('name', this.formInline.name)
+		          }
+		          this.noAyncHttp('${base}/approve/task/list.json', formParams).then((res) => {
+		            this.tableData = res.data
+		          }, (error) => {
+		            console.error('出错了', error)
+		          })
+		        },
+		        applyTask: function () {
+		        	  const formParams2 = new FormData()
+			          this.noAyncHttp('${base}/leave/apply/task.json', formParams2).then((res) => {
+			        	  //申请任务后,重新加载数据
+			        	  app.loadTableData();
+			          }, (error) => {
+			            console.error('出错了', error)
+			          })
+			        },
+		        noAyncHttp (url, params) {
+		  		  return new Promise(function (resolve, reject) {
+		  		    axios
+		  		      .post(url, params)
+		  		      .then((response) => {
+		  		        resolve(response.data)
+		  		      }
+		  		      )
+		  		      .catch((error) => { // 请求失败处理
+		  		        reject(error)
+		  		      })
+		  		  })
+		  		}
+		        
+		        
+		      }
+		})
+	
+	
+	app.loadTableData();
+
+</script>	
+	
+</body>
+
+</html>
