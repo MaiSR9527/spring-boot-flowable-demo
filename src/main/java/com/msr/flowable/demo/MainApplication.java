@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Bean;
  * @date 2020/8/8 14:48
  */
 @SpringBootApplication
+
 public class MainApplication {
 
     public static void main(String[] args) {
